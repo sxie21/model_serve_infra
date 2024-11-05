@@ -1,0 +1,4 @@
+torch
+torchserve==0.8.2
+torch-model-archiver==0.8.2
+torch-workflow-archiver==0.2.10

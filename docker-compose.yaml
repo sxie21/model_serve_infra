@@ -1,0 +1,100 @@
+version: '3'
+
+networks:
+  monitoring:
+    driver: bridge
+
+services:
+  torchserve_green:
+    image: pytorch/torchserve:0.12.0-cpu
+    volumes:
+      - ./models/model_store:/home/model-server/model-store
+      - ./models/config.properties:/home/model-server/config.properties
+      - ./models/metrics.yaml:/home/model-server/metrics.yaml
+
+    ports:
+      - "8000:8080"  # inference API
+      - "8001:8081"  # management API
+      - "8002:8082"  # Metrics API
+    networks:
+      - monitoring 
+    # environment:
+    #   - MODEL_NAME=model_v1
+    #   - TORCHSERVE_HTTP_PORT=8080
+    #   - TORCHSERVE_GRPC_PORT=7070
+    restart: always
+    command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
+
+  torchserve_blue:
+    image: pytorch/torchserve:0.12.0-cpu
+    volumes:
+      - ./models/model_store:/home/model-server/model-store
+      - ./models/config.properties:/home/model-server/config.properties
+      - ./models/metrics.yaml:/home/model-server/metrics.yaml
+    ports:
+      - "9000:8080"  # inference API
+      - "9001:8081"  # management API
+      - "9002:8082"  # Metrics API
+    networks:
+      - monitoring
+    # environment:
+    #   - MODEL_NAME=model_v1
+    #   - TORCHSERVE_HTTP_PORT=8080
+    #   - TORCHSERVE_GRPC_PORT=7070
+    restart: always
+    command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
+
+  nginx:
+    image: nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    ports:
+      - "80:80"  # Expose NGINX on port 80
+    networks:
+      - monitoring
+    depends_on:
+      - torchserve_green
+      - torchserve_blue
+    restart: always
+
+
+  prometheus:
+    image: prom/prometheus
+    container_name: prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring      
+    volumes:
+      - ./prometheus:/etc/prometheus
+    restart: always
+
+  node_exporter:
+    image: prom/node-exporter
+    container_name: node_exporter
+    networks:
+      - monitoring
+    restart: always
+    ports:
+      - "9100:9100"
+
+
+  # grafana:
+  #   image: grafana/grafana
+  #   ports:
+  #     - "3000:3000"
+  #   environment:
+  #     - GF_SECURITY_ADMIN_PASSWORD=yourpassword
+  #   depends_on:
+  #     - prometheus
+
+  jenkins:
+    image: jenkins/jenkins:lts
+    container_name: jenkins
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - ./jenkins_home:/var/jenkins_home
+    environment:
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false

@@ -17,13 +17,13 @@ RUN /usr/local/bin/install-plugins.sh < /usr/share/jenkins/ref/plugins.txt
 EXPOSE 8080
 EXPOSE 50000
 
-environment:
-    - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # 禁用设置向导
-    - JENKINS_USER=admin  # 设置管理员用户名
-    - JENKINS_PASS=admin123  # 设置管理员密码    environment:
-        - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # 禁用设置向导
-        - JENKINS_USER=admin  # 设置管理员用户名
-        - JENKINS_PASS=admin123  # 设置管理员密码
+# environment:
+#     - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # 禁用设置向导
+#     - JENKINS_USER=admin  # 设置管理员用户名
+#     - JENKINS_PASS=admin123  # 设置管理员密码    environment:
+#         - JAVA_OPTS=-Djenkins.install.runSetupWizard=false  # 禁用设置向导
+#         - JENKINS_USER=admin  # 设置管理员用户名
+#         - JENKINS_PASS=admin123  # 设置管理员密码
 
 # 设置默认的启动命令（默认 Jenkins 镜像已经有这个命令）
 CMD ["java", "-jar", "/usr/share/jenkins/jenkins.war"]

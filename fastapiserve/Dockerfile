@@ -4,6 +4,7 @@ WORKDIR /app
 
 COPY . /app
 
+# 安装所需的依赖
 RUN pip install --no-cache-dir -r requirements.txt
 
 EXPOSE 6000

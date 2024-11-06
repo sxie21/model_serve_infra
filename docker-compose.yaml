@@ -78,7 +78,22 @@ services:
     ports:
       - "9100:9100"
 
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin 
+      - GF_SECURITY_ADMIN_PASSWORD=grafana
+    volumes:
+      - ./config/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
+#      - ./config/grafana/provisioning:/etc/grafana/provisioning
+#      - ./config/grafana/dashboards:/etc/grafana/dashboards
+    networks:
+      - monitoring
+    restart: always
 
+  
   # grafana:
   #   image: grafana/grafana
   #   ports:
@@ -95,6 +110,11 @@ services:
       - "8080:8080"
       - "50000:50000"
     volumes:
-      - ./jenkins_home:/var/jenkins_home
+      - jenkins_home:/var/jenkins_home:rw    
+      - /home/ubuntu/jenkins_home/workspace:/var/jenkins_home/workspace  
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+
+
+volumes:
+  jenkins_home: 

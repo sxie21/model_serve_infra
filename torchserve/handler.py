@@ -10,10 +10,21 @@ class SimpleHandler(BaseHandler):
     def __init__(self):
         super(SimpleHandler, self).__init__()
         self.model = SimpleModel()
+        self.count = 0
+        self.mean_x1 = 0.0
+        self.mean_x2 = 0.0
+        self.var_x1 = 0.0
+        self.var_x2 = 0.0
+
+        # 初始化当前值
+        self.current_mean_x1 = self.mean_x1
+        self.current_mean_x2 = self.mean_x2
     
     def initialize(self, context):
-         
+        super().initialize(context)
+        self.context = context
         metrics = context.metrics
+
         self.model.load_state_dict(torch.load("model.pth", map_location=torch.device('cpu')))
         self.model.eval()
 
@@ -21,40 +32,37 @@ class SimpleHandler(BaseHandler):
         self.inf_request_count = metrics.add_metric_to_cache(
             metric_name="inference_request_count",
             unit="count",
-            dimension_names=[],
+            dimension_names=["ModelName"],
             metric_type=MetricTypes.COUNTER,
         )
 
-        self.mean_metric = metrics.add_metric_to_cache(
+        self.input_mean_x1 = metrics.add_metric_to_cache(
             metric_name="input_mean_x1", 
             unit="value", 
-            dimension_names=[], 
+            dimension_names=["ModelName"], 
             metric_type=MetricTypes.GAUGE 
         )
         
-        self.var_metric = metrics.add_metric_to_cache(
-            metric_name="input_variance_x1", 
+        self.input_var_x1 = metrics.add_metric_to_cache(
+            metric_name="input_var_x1", 
             unit="value", 
-            dimension_names=[], 
+            dimension_names=["ModelName"], 
             metric_type=MetricTypes.GAUGE
         )
 
-        self.mean_metric = metrics.add_metric_to_cache(
+        self.input_mean_x2 = metrics.add_metric_to_cache(
             metric_name="input_mean_x2", 
             unit="value", 
-            dimension_names=[], 
+            dimension_names=["ModelName"], 
             metric_type=MetricTypes.GAUGE 
         )
         
-        self.var_metric = metrics.add_metric_to_cache(
-            metric_name="input_variance_x2", 
+        self.input_var_x2 = metrics.add_metric_to_cache(
+            metric_name="input_var_x2", 
             unit="value", 
-            dimension_names=[], 
+            dimension_names=["ModelName"], 
             metric_type=MetricTypes.GAUGE
         )        
-
-
-
 
 
     def preprocess(self, data):
@@ -68,6 +76,9 @@ class SimpleHandler(BaseHandler):
         if len(preprocessed_data) != 2: #hard code TODO
             raise ValueError("Invalid Input, please make sure input data length is 2")  
         preprocessed_data = torch.tensor(preprocessed_data).float()
+
+        self._update_incremental_stats(preprocessed_data)
+
         return preprocessed_data
 
     def inference(self, input_tensor):
@@ -75,7 +86,7 @@ class SimpleHandler(BaseHandler):
         with torch.no_grad():
             output = self.model(input_tensor)
         
-        self.inf_request_count.add_or_update(value=1, dimension_values=[])
+        #self.inf_request_count.add_or_update(value=1, dimension_values=[])
 
         # inference_count_metric = metrics.get_metric(
         #     metric_name="InferenceRequestCount", metric_type=MetricTypes.COUNTER
@@ -107,35 +118,25 @@ class SimpleHandler(BaseHandler):
         return self.postprocess(model_output)
     
 
-    # def _update_incremental_stats(self, preprocessed_data):
+    def _update_incremental_stats(self, preprocessed_data):
 
-    #     """
-    #     calculate incremental mean and variance
-    #     """
-    #     x1, x2 = preprocessed_data
+        """
+        calculate incremental mean and variance
+        """
+        x1, x2 = preprocessed_data
 
-    #     self.x1_count += 1
-    #     self.x2_count += 1
+        self.count += 1
 
-    #     x1_delta = x1 - self.x1_mean
-    #     x2_delta = x2 - self.x2_mean
+        x1_delta = x1 - self.mean_x1
+        x2_delta = x2 - self.mean_x2
 
-    #     self.x1_mean += x1_delta / (self.x1_count)
-    #     self.x2_mean += x2_delta / (self.x2_count)
+        self.mean_x1 += x1_delta / (self.count)
+        self.mean_x2 += x2_delta / (self.count)
         
-    #     self.x1_variance += x1_delta * (x1 - self.x1_mean)
-    #     self.x2_variance += x2_delta * (x2 - self.x1_mean)
+        self.var_x1 += x1_delta * (x1 - self.mean_x1)
+        self.var_x2 += x2_delta * (x2 - self.mean_x2)
 
-    
-        #self._update_prometheus_metrics(stat_name)
-
-    # def _update_prometheus_metrics(self, stat_name):
-    #         """
-    #         update prometheus metrics
-    #         """
-    #         if stat_name == 'x1':
-    #             self.x1_distribution.labels(stat='mean').set(self.x1_mean)
-    #             self.x1_distribution.labels(stat='std').set((self.x1_variance / self.x1_count)**0.5)
-    #         elif stat_name == 'x2':
-    #             self.x2_distribution.labels(stat='mean').set(self.x2_mean)
-    #             self.x2_distribution.labels(stat='std').set((self.x2_variance / self.x2_count)**0.5)        
+        self.input_mean_x1.add_or_update(value=self.mean_x1, dimension_values=[self.context.model_name])
+        self.input_var_x1.add_or_update(value=self.var_x1, dimension_values=[self.context.model_name])
+        self.input_mean_x2.add_or_update(value=self.mean_x2, dimension_values=[self.context.model_name])
+        self.input_var_x2.add_or_update(value=self.var_x2, dimension_values=[self.context.model_name])

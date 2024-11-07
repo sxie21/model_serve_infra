@@ -13,5 +13,5 @@ torch-model-archiver --model-name model_v1 \
 
 torchserve --start --model-store /home/model-server/model-store/green \
            --enable-model-api --ts-config /home/model-server/config.properties \
-           --models model_v1 \
+           --models model_v1.mar \
            --disable-token-auth

@@ -9,6 +9,7 @@ services:
     image: pytorch/torchserve:0.12.0-cpu
     volumes:
       - ./torchserve/model_store:/home/model-server/model-store
+      - ./torchserve/model_store/green:/home/model-server/model-store/green
       - ./torchserve/config.properties:/home/model-server/config.properties
       - ./torchserve/metrics.yaml:/home/model-server/metrics.yaml
       - ./torchserve/model.py:/home/model-server/model.py
@@ -34,6 +35,7 @@ services:
     image: pytorch/torchserve:0.12.0-cpu
     volumes:
       - ./torchserve/model_store:/home/model-server/model-store
+      - ./torchserve/model_store/blue:/home/model-server/model-store/blue
       - ./torchserve/config.properties:/home/model-server/config.properties
       - ./torchserve/metrics.yaml:/home/model-server/metrics.yaml
       - ./torchserve/model.py:/home/model-server/model.py

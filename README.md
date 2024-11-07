@@ -70,34 +70,47 @@ This project is about build a dockerized infrastructure on a single node HTTP se
 
 5. Start a simulator to generate user input and perform load test
 
+    visit localhost:8089 on local browser
+    replace with your host ip and start load test
+    ![alt text](./assets/locust.png)
+
+
+    then visit localhost:3000 on local browser, login with
+    user: admin
+    password: grafana
     and you can view the metrics on Grafana
+    ![alt text](./assets/grafana.png)
 
-    alteratively
-    test qps 
+
+6. Once feeling good, the model can be deployed to prod enviroment
+    edit nginx config, choose the desired path for predict
     ```
-    sudo apt install apache2-utils
+        location /predict {
+            proxy_pass http://green/predictions/model;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
 
-    ab -n 1000 -c 100 ttp://localhost:9000/predictions/<model name>
-    这里，-n 1000 表示发送 1000 个请求，-c 100 表示使用 100 个并发请求，尽量维持目标 QPS。
+        location /test/predict {
+            proxy_pass http://blue/predictions/model;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+        }
     ```
-
-6. Once feeling good, model can be deployed
-    edit nginx config
-    after config changed, update nginx with 
+    after config changed, update nginx with
     ```
     docker-compose exec nginx nginx -s reload
     ```
 
+    then use prod api is ready for serving:
     ```
-    # register model in prod enviroment by torchserve api
-    curl -X POST "http://localhost:8001/models?url=model.mar&model_name=model"
+    curl -X POST http://localhost/predict -H "Content-Type: application/json" -d '{"data": [4.0,6.0]}'
+    ```
 
-    # assgin resources
-    curl -X PUT "http://localhost:8001/models/model?min_worker=1&max_worker=1"
-    
-    # you can also unregister model in test enviroment
-    curl -X DELETE http://localhost:9001/models/modelnew
-    ```
 
 
 7. model update
@@ -109,6 +122,7 @@ This project is about build a dockerized infrastructure on a single node HTTP se
     - archive model on another instance
 
     ```
+    # if service in running in torchserve_green, then:
     docker-compose exec torchserve_blue torch-model-archiver --model-name <model name> --version 1.0 --model-file model.py --serialized-file model.pth --handle handler.py --export-path model_store
     ```
     - serve the model
@@ -137,35 +151,6 @@ This project is about build a dockerized infrastructure on a single node HTTP se
 
 
 
-4. Once Setup, if a git repo and credential
-
- is configured, commit model.py and model.pth to the designated repo will trigger automated workflow for build  test and deploy. Alternatively, follow the following steps to set up manually, to deploy a model first in a blue environment
-
-5. Upload model.py, model.pth to ./torchserve/models, then archive model:
-    ```
-    cd ./models
-    torch-model-archiver --model-name <model name> --version 1.0 --model-file model.py --serialized-file model.pth --handle handler.py --export-path model_store
-    ```
-
-6. register model in torchserve and assign resouces:
-    ```
-    #check exsiting models
-    curl http://localhost:8001/models     
-
-    # register model
-    curl -X POST "http://localhost:9001/models?url=<your_model.mar>&model_name=<model name>"
-
-    # assgin resources
-    curl -X PUT "http://localhost:9001/models/<model name>?min_worker=1&max_worker=1"
-
-    ```
-    once the above steps are down, model is ready for serving
-
-7. Use model inference API to predict:
-    ```
-    <!-- docker run --rm -it -p 8080:8080 -p 8081:8081 -p 8082:8082 -v ./model_store:/model_store pytorch/torchserve torchserve --model-store=/model_store --disable-token-auth
-     -->
-    curl -X POST http://localhost:9000/predictions/<model name> -H "Content-Type: application/json" -d '{"data": [4.0,6.0]}'
 
     ```
 8. Check qps load and latency:
@@ -177,39 +162,6 @@ This project is about build a dockerized infrastructure on a single node HTTP se
     这里，-n 1000 表示发送 1000 个请求，-c 100 表示使用 100 个并发请求，尽量维持目标 QPS。
     ```
 
-9. If feeling good about the model, deploy it in prod environment
-    ```
-    # register model
-    curl -X POST "http://localhost:8001/models?url=<your_model.mar>&model_name=<model name>"
-
-    # assgin resources
-    curl -X PUT "http://localhost:8001/models/<model name>?min_worker=1&max_worker=1"
-
-    ```
-
-10. Use api 
-    ```
-    curl -X POST http://localhost/predict -H "Content-Type: application/json" -d '{"data": [4.0,6.0]}'
-
-    ```
-
-11. check metrics and alers on Prometheus
-    
-    ![alt text](./assets/prometheus.png)
-
-    
-
-11. Update Model or Rollback
-
-    ```
-    #update nginx config
-
-
-    ```
-    after config changed, update nginx with 
-    ```
-    docker-compose exec nginx nginx -s reload
-    ```
 
 
 
@@ -268,11 +220,13 @@ curl -X POST http://localhost:/predictions/model1 -H "Content-Type: application/
 docker-compose exec nginx nginx -s reload
 
 
-torch-model-archiver --model-name model3 --version 1.0 --model-file model.py --serialized-file model.pth --handle handler.py --export-path model_store
+torch-model-archiver --model-name model --version 1.0 --model-file model.py --serialized-file model.pth --handle handler.py --export-path model_store/green
 
 
-curl -X POST "http://localhost:8001/models?url=model0.mar&model_name=model0"
-curl -X PUT "http://localhost:8001/models/model0?min_worker=1&max_worker=1"
+torch-model-archiver --model-name model --version 1.0 --model-file /home/model-server/model.py --serialized-file /home/model-server/model.pth --handler /home/model-server/handler.py --export-path /home/model-server/model-store/green
+
+curl -X POST "http://localhost:8001/models?url=model.mar&model_name=model"
+curl -X PUT "http://localhost:8001/models/model?min_worker=1&max_worker=1"
 
 curl -X POST http://localhost:8000/predictions/model0 -H "Content-Type: application/json" -d '{"data": [4.0, 6.0]}'
 
@@ -315,6 +269,7 @@ to tesk the api:
 get host ip 
 
 ```
+ip route | grep default | awk '{print $3}'
 ip route | grep default
 default via 172.31.16.1 dev enX0 proto dhcp src 172.31.20.55 metric 10
 ```
@@ -349,3 +304,22 @@ curl -X PUT "http://localhost:8001/models/mnist?min_worker=1&max_worker=1"
 
 
 torch-model-archiver --model-name modelnew --version 1.0 --model-file model.py --serialized-file model.pth --handle handler.py --export-path model_store
+    alteratively
+    test qps 
+    ```
+    sudo apt install apache2-utils
+
+    ab -n 1000 -c 100 ttp://localhost:9000/predictions/<model name>
+    这里，-n 1000 表示发送 1000 个请求，-c 100 表示使用 100 个并发请求，尽量维持目标 QPS。
+    ```
+
+        ```
+    # register model in prod enviroment by torchserve api
+    curl -X POST "http://localhost:8001/models?url=model.mar&model_name=model"
+
+    # assgin resources
+    curl -X PUT "http://localhost:8001/models/model?min_worker=1&max_worker=1"
+    
+    # you can also unregister model from test enviroment by using torchserve api
+    curl -X DELETE http://localhost:9001/models/modelnew
+    ```

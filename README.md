@@ -46,22 +46,21 @@ This project is about build a dockerized infrastructure on a single node HTTP se
     docker-compose up -d
     ```
     In this stage docker will:
-    - create a torchserve instance serving the models and logging the metrics
-    - create an nginx to handle incoming traffic and rate limiting, as well as choose torchserve instances for blue green deployment
-    - create a node exporter for prometheus to monitor server metrics
+    - create a torchserve instance serving the models and logging the metrics simutaneously
+    - create an nginx to handle incoming traffic and perform rate limiting, as well as choose torchserve instances for blue green deployment
+    - create a node exporter for prometheus to monitor server itself
     - create a prometheus instance to collect metrics
     - create a grafana instance with pre-build dashboards to visualize metrics
     - create a kafka consumer to ingest training data and calculate the statistics for model-drift detection
     - create a locust instance to perform load test of the torchserve api
-    - create a jenkins instance to orchestrate archive test and deploy for model update
 
 3. check if services are built:
     ```
     docker ps
     ```
-4. Once setup, a model is ready to serve at http://<localhost ip>/predict
+4. Once setup, a model is ready to serve at test environment http://localhost/test/predict
     ```
-    curl -X POST http://localhost/predict -H "Content-Type: application/json" -d '{"data": [4.0,6.0]}'
+    curl -X POST http://localhost/test/predict -H "Content-Type: application/json" -d '{"data": [4.0,6.0]}'
     ```
 
 6. (Optional) ssh to the server to view web UI(e.g grafana) on local PC
@@ -69,7 +68,7 @@ This project is about build a dockerized infrastructure on a single node HTTP se
      ssh -L 9090:localhost:9090 -L 3000:localhost:3000 -L 8080:localhost:8080 username>@hostname -i your_ssh_key.pem
     ```
 
-5. Start simulator to generating user input and perform load test
+5. Start a simulator to generate user input and perform load test
 
     and you can view the metrics on Grafana
 
@@ -83,16 +82,38 @@ This project is about build a dockerized infrastructure on a single node HTTP se
     ```
 
 6. Once feeling good, model can be deployed
+    edit nginx config
+    after config changed, update nginx with 
+    ```
+    docker-compose exec nginx nginx -s reload
+    ```
+
+    ```
+    # register model in prod enviroment by torchserve api
+    curl -X POST "http://localhost:8001/models?url=model.mar&model_name=model"
+
+    # assgin resources
+    curl -X PUT "http://localhost:8001/models/model?min_worker=1&max_worker=1"
+    
+    # you can also unregister model in test enviroment
+    curl -X DELETE http://localhost:9001/models/modelnew
+    ```
+
 
 7. model update
-    - upload new model file to torchserve/,
-    - archive model
+    - upload new model file to torchserve/
+    - check which instance is running in production
+    ```
+
+    ```
+    - archive model on another instance
+
     ```
     docker-compose exec torchserve_blue torch-model-archiver --model-name <model name> --version 1.0 --model-file model.py --serialized-file model.pth --handle handler.py --export-path model_store
     ```
     - serve the model
     ```
-    # register model
+    # register model by torchserve api
     curl -X POST "http://localhost:9001/models?url=<your_model.mar>&model_name=<model name>"
 
     # assgin resources

@@ -100,9 +100,9 @@ services:
     depends_on:
       - prometheus      
     volumes:
-      - ./config/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-      - ./config/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
-      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
+      - ./config/grafana/datasource.yml:/etc/grafana/provisioning/datasources/datasource.yml
+      - ./config/grafana/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml
+      - ./config/grafana/dashboards:/etc/grafana/provisioning/dashboards
     networks:
       - monitoring
     restart: always

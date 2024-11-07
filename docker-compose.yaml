@@ -107,17 +107,31 @@ services:
       - monitoring
     restart: always
 
-  jenkins:
-    image: jenkins/jenkins:lts
-    container_name: jenkins
-    ports:
-      - "8080:8080"
-      - "50000:50000"
-    volumes:
-      - jenkins_home:/var/jenkins_home:rw    
-      - /home/ubuntu/jenkins_home/workspace:/var/jenkins_home/workspace  
-    environment:
-      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
 
-volumes:
-  jenkins_home: 
+  locust:
+    image: locustio/locust
+    container_name: locust
+    ports:
+      - "8089:8089"
+    environment:
+      - TARGET_HOST=http://nginx/test/predict
+    command: locust -f /mnt/locust/locustfile.py --host $TARGET_HOST
+    volumes:
+      - ./Locust/locustfile.py:/mnt/locust/locustfile.py
+    depends_on:
+      - nginx
+
+#   jenkins:
+#     image: jenkins/jenkins:lts
+#     container_name: jenkins
+#     ports:
+#       - "8080:8080"
+#       - "50000:50000"
+#     volumes:
+#       - jenkins_home:/var/jenkins_home:rw    
+#       - /home/ubuntu/jenkins_home/workspace:/var/jenkins_home/workspace  
+#     environment:
+#       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+
+# volumes:
+#   jenkins_home: 

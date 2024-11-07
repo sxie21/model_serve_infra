@@ -14,7 +14,7 @@ services:
       - ./torchserve/model.py:/home/model-server/model.py
       - ./torchserve/model.pth:/home/model-server/model.pth
       - ./torchserve/handler.py:/home/model-server/handler.py
-      - ./torchserve/start.sh:/home/model-server/start.sh
+      - ./torchserve/start_green.sh:/home/model-server/start_green.sh
 
     ports:
       - "8000:8080"  # inference API
@@ -39,7 +39,7 @@ services:
       - ./torchserve/model.py:/home/model-server/model.py
       - ./torchserve/model.pth:/home/model-server/model.pth
       - ./torchserve/handler.py:/home/model-server/handler.py
-      - ./torchserve/start.sh:/home/model-server/start.sh
+      - ./torchserve/start_blue.sh:/home/model-server/start_blue.sh
     ports:
       - "9000:8080"  # inference API
       - "9001:8081"  # management API

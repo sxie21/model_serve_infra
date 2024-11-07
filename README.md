@@ -1,3 +1,9 @@
+## Introduction
+
+This Project is about building a dockerized infrastructure on a single node HTTP server to automate serve and monitor a simple machinel learning model.
+
+![alt text](./assets/SchematicDiagram.png)
+
 ## Contents
 
 - `assets/`: images and screenshots
@@ -22,14 +28,17 @@
 - `docker-compose.yml`：Dockers for torchserve, nginx, prometheus, grafana etc.
 
 
-## Introduction
-
-This Project is about building a dockerized infrastructure on a single node HTTP server to automate serve and monitor a simple machinel learning model.
-
-![alt text](./assets/SchematicDiagram.png)
-
 
 ## Getting Started
+
+1. install toolkits
+    ```
+    install_docker.sh
+    install git
+    git clone
+    ```
+
+
 
 1. Configure user settings
 
@@ -40,6 +49,9 @@ This Project is about building a dockerized infrastructure on a single node HTTP
     ```
     docker-compose up -d
     ```
+    In this stage docker will:
+    - 
+    - 
 
 3. check if services are built:
     ```
@@ -225,8 +237,15 @@ get host ip
 ip route | grep default
 default via 172.31.16.1 dev enX0 proto dhcp src 172.31.20.55 metric 10
 ```
+edit Dockerfile under /lucost
+replace with localhost ip
 
-docker run -it --rm -e LOCUST_HOST=172.31.20.55:8000 locust-api-test
+Build image
+docker build - t locust_api_test .
+docker run -p 8089:8089 -d locust_api_test
+
+
+grafana 
 
 
 (sum(Requests2XX[5m]))

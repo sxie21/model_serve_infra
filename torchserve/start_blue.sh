@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# mkdir /home/model-server/model-store/blue
+# chmod +rw /home/model-server/model-store/blue
+
 torch-model-archiver --model-name model_v1 \
                     --version 1.0 \
                     --model-file /home/model-server/model.py \
@@ -10,5 +13,5 @@ torch-model-archiver --model-name model_v1 \
 
 torchserve --start --model-store /home/model-server/model-store/blue \
            --enable-model-api --ts-config /home/model-server/config.properties \
-           --model_name model_v1 \
+           --models model_v1 \
            --disable-token-auth

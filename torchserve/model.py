@@ -8,6 +8,3 @@ class SimpleModel(nn.Module):
 
     def forward(self, x):
         return self.fc(x)
-    
-model = SimpleModel()
-torch.save(model.state_dict(),'simple_model.pth')

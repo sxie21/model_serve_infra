@@ -8,9 +8,13 @@ services:
   torchserve_green:
     image: pytorch/torchserve:0.12.0-cpu
     volumes:
-      - ./models/model_store:/home/model-server/model-store
-      - ./models/config.properties:/home/model-server/config.properties
-      - ./models/metrics.yaml:/home/model-server/metrics.yaml
+      - ./torchserve/model_store:/home/model-server/model-store
+      - ./torchserve/config.properties:/home/model-server/config.properties
+      - ./torchserve/metrics.yaml:/home/model-server/metrics.yaml
+      - ./torchserve/model.py:/home/model-server/model.py
+      - ./torchserve/model.pth:/home/model-server/model.pth
+      - ./torchserve/handler.py:/home/model-server/handler.py
+      - ./torchserve/start.sh:/home/model-server/start.sh
 
     ports:
       - "8000:8080"  # inference API
@@ -23,14 +27,19 @@ services:
     #   - TORCHSERVE_HTTP_PORT=8080
     #   - TORCHSERVE_GRPC_PORT=7070
     restart: always
-    command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
+    command: ["/bin/bash", "/home/model-server/start_green.sh"]
+    #command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
 
   torchserve_blue:
     image: pytorch/torchserve:0.12.0-cpu
     volumes:
-      - ./models/model_store:/home/model-server/model-store
-      - ./models/config.properties:/home/model-server/config.properties
-      - ./models/metrics.yaml:/home/model-server/metrics.yaml
+      - ./torchserve/model_store:/home/model-server/model-store
+      - ./torchserve/config.properties:/home/model-server/config.properties
+      - ./torchserve/metrics.yaml:/home/model-server/metrics.yaml
+      - ./torchserve/model.py:/home/model-server/model.py
+      - ./torchserve/model.pth:/home/model-server/model.pth
+      - ./torchserve/handler.py:/home/model-server/handler.py
+      - ./torchserve/start.sh:/home/model-server/start.sh
     ports:
       - "9000:8080"  # inference API
       - "9001:8081"  # management API
@@ -42,12 +51,13 @@ services:
     #   - TORCHSERVE_HTTP_PORT=8080
     #   - TORCHSERVE_GRPC_PORT=7070
     restart: always
-    command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
+    command: ["/bin/bash", "/home/model-server/start_blue.sh"]
+    #command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
 
   nginx:
     image: nginx
     volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./config/nginx/nginx.conf:/etc/nginx/nginx.conf
     ports:
       - "80:80"  # Expose NGINX on port 80
     networks:
@@ -66,7 +76,7 @@ services:
     networks:
       - monitoring      
     volumes:
-      - ./prometheus:/etc/prometheus
+      - ./config/prometheus:/etc/prometheus
     restart: always
 
   node_exporter:
@@ -85,23 +95,15 @@ services:
     environment:
       - GF_SECURITY_ADMIN_USER=admin 
       - GF_SECURITY_ADMIN_PASSWORD=grafana
+    depends_on:
+      - prometheus      
     volumes:
       - ./config/grafana/datasource.yaml:/etc/grafana/provisioning/datasources/datasource.yaml
-#      - ./config/grafana/provisioning:/etc/grafana/provisioning
-#      - ./config/grafana/dashboards:/etc/grafana/dashboards
+      - ./config/grafana/dashboard.yaml:/etc/grafana/provisioning/dashboards/main.yaml
+      - ./config/grafana/dashboards:/var/lib/grafana/dashboards
     networks:
       - monitoring
     restart: always
-
-  
-  # grafana:
-  #   image: grafana/grafana
-  #   ports:
-  #     - "3000:3000"
-  #   environment:
-  #     - GF_SECURITY_ADMIN_PASSWORD=yourpassword
-  #   depends_on:
-  #     - prometheus
 
   jenkins:
     image: jenkins/jenkins:lts
@@ -114,7 +116,6 @@ services:
       - /home/ubuntu/jenkins_home/workspace:/var/jenkins_home/workspace  
     environment:
       - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
-
 
 volumes:
   jenkins_home: 

@@ -211,6 +211,7 @@ scp -i .\SiyuEC2.pem  "C:/Users/Neil/Downloads/mnist_cnn.pt" ubuntu@34.229.122.1
 
 jenkins自动测qps
 配置rate limiting
+模拟输入错误
 back up access log
 
 

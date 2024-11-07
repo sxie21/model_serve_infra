@@ -22,6 +22,10 @@ class SimpleHandler(BaseHandler):
     
     def initialize(self, context):
         super().initialize(context)
+        if context is None:
+            print("Context is None!")
+        else:
+            print("Model Name:", context.model_name)        
         self.context = context
         metrics = context.metrics
 

@@ -1,14 +1,12 @@
-FROM python:3.8-slim
+FROM node:18-alpine
 
-WORKDIR /app 
+WORKDIR /app
 
-COPY . /app
+COPY package.json ./
+RUN npm install
 
-RUN pip install -r requirements.txt
+COPY . .
 
-ENV PROMETHEUS_PORT=6000 \
-    KAFKA_TOPIC=training_data \
-    KAFKA_HOST=kafka \
-    KAFKA_PORT=9092
+EXPOSE 6001
 
-CMD ["python", "consumer.py"]
+CMD ["node", "consumer.js"]

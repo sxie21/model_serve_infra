@@ -110,12 +110,13 @@ services:
 
   locust:
     image: locustio/locust
-    container_name: locust
+    volumes:
+      - ./emulator/Locust/locustfile.py:/locust-tasks/locustfile.py
+    command: -f /locust-tasks/locustfile.py --host=http://172.31.29.243
+    networks:
+      - monitoring    
     ports:
       - "8089:8089"
-    command: locust -f /mnt/locust/locustfile.py --host http://172.31.94.229
-    volumes:
-      - ./emulator/Locust/locustfile.py:/mnt/locust/locustfile.py
     depends_on:
       - nginx
 

@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # get current symlink
-current=$(docker-compose exec nginx cat /etc/nginx/nginx.conf | grep "proxy_pass" | head -n 1)
+current=$(docker-compose exec nginx cat /etc/nginx/nginx.conf | sed -n '/location \/predict/,/}/p' | grep "proxy_pass" | head -n 1)
 echo $current
 
 # conditionally deploy the other color

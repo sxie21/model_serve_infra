@@ -1,24 +1,32 @@
-import random
 import time
-from kafka import KafkaProducer
 import json
+import random
+from kafka import KafkaProducer
+import os
 
-producer = KafkaProducer(
-    bootstrap_servers='localhost:9092',
-    value_serializer=lambda v: json.dumps(v).encode('utf-8')  
-)
+KAFKA_TOPIC = os.environ['KAFKA_TOPIC']
+KAFKA_HOST = os.environ['KAFKA_HOST']
+KAFKA_PORT = os.environ['KAFKA_PORT']
 
-while True:
-    x1 = random.uniform(0, 1)
-    x2 = random.uniform(0, 1)
+def create_producer():
+    server = f'''{KAFKA_HOST}:{KAFKA_PORT}'''
+    producer = KafkaProducer(
+        bootstrap_servers=server,
+        value_serializer=lambda v: json.dumps(v).encode('utf-8')
+    )
+    return producer
+
+def main():
+    producer = create_producer()
     
-    message = {
-        'x1': x1,
-        'x2': x2
-    }
+    while True:
+        x1 = random.uniform(0, 1)
+        x2 = random.uniform(0, 1)
+        data = {'x1': x1, 'x2': x2}
+        producer.send(KAFKA_TOPIC, data)
+        print(f"Sent: {data}")
+        time.sleep(1)
 
-    producer.send('training_data', value=message)
 
-    print(f"Sent: {message}")
-
-    time.sleep(1)
+if __name__ == '__main__':
+    main()

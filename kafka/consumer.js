@@ -60,7 +60,8 @@ class Welford {
 const createConsumer = () => {
   const kafka = new Kafka({
     clientId: 'consumer',
-    brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`]
+    brokers: [`localhost:9092`]
+    //brokers: [`${process.env.KAFKA_HOST}:${process.env.KAFKA_PORT}`]
   });
 
   const consumer = kafka.consumer({ groupId: 'trainingdata' });
@@ -69,11 +70,18 @@ const createConsumer = () => {
 
 // Start HTTP server for Prometheus scraping
 const startHttpServer = () => {
-  const port = process.env.PROMETHEUS_PORT;
-  http.createServer((req, res) => {
+  const port = 6001;
+  http.createServer(async (req, res) => {  // Make the handler async
     if (req.url === '/metrics') {
       res.setHeader('Content-Type', prometheus.register.contentType);
-      res.end(prometheus.register.metrics());
+      try {
+        // Ensure to await the metrics method
+        const metrics = await prometheus.register.metrics();
+        res.end(metrics);  // Pass the resolved string to res.end
+      } catch (err) {
+        res.statusCode = 500;
+        res.end('Error fetching metrics');
+      }
     } else {
       res.statusCode = 404;
       res.end();
@@ -88,12 +96,13 @@ const main = async () => {
   const welford = new Welford();
   const consumer = createConsumer();
   
-  // Start Prometheus server
+  // // Start Prometheus server
   startHttpServer();
 
   // Connect Kafka consumer and subscribe to topic
   await consumer.connect();
-  await consumer.subscribe({ topic: process.env.KAFKA_TOPIC, fromBeginning: true });
+  //await consumer.subscribe({ topic: process.env.KAFKA_TOPIC, fromBeginning: true });
+  await consumer.subscribe({ topic: "trainingdata", fromBeginning: true });
 
   // Consume messages from Kafka
   await consumer.run({
@@ -111,6 +120,8 @@ const main = async () => {
         varX1Metric.set(varX1);
         meanX2Metric.set(meanX2);
         varX2Metric.set(varX2);
+       // console.log(`收到消息: ${x1}`);
+
       }
     }
   });

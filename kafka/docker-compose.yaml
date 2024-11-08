@@ -1,20 +1,22 @@
 version: '3'
 
 networks:
-  monitoring:
+  model_serve_infra_monitoring:
     external: true  #external from main yaml
 
+services:
   kafka_listener:
-    image: node:18-alpine
+    build: .
     container_name: kafka_listener
     environment:  # Replace with actual data streams
       - PROMETHEUS_PORT=6001
-      - KAFKA_HOST=kafka
+      - KAFKA_HOST=172.31.29.243
       - KAFKA_PORT=9092
       - KAFKA_TOPIC=trainingdata
     networks:
-      - monitoring
-    working_dir: /app
+      - model_serve_infra_monitoring
+    ports:
+      - "9092:9009"
+    restart: always
+#    working_dir: /app
     command: ["node", "consumer.js"]
-    depends_on:
-      - kafka

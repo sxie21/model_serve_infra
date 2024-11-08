@@ -4,7 +4,6 @@ import random
 
 class APIUser(HttpUser):
     wait_time = between(1, 2)  # latency bewteen each request
-    target_host = os.getenv('TARGET_HOST', 'http://nginx/test/predict')
 
     @task
     def predict(self):

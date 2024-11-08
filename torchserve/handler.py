@@ -1,10 +1,9 @@
 from ts.torch_handler.base_handler import BaseHandler
 from ts.metrics.metric_type_enum import MetricTypes
+from ts.utils.util import PredictionException
 import torch
 import json
 from model import SimpleModel
-#from prometheus_client import Gauge
-
 
 class SimpleHandler(BaseHandler):
     def __init__(self):
@@ -16,9 +15,6 @@ class SimpleHandler(BaseHandler):
         self.var_x1 = 0.0
         self.var_x2 = 0.0
 
-        # 初始化当前值
-        self.current_mean_x1 = self.mean_x1
-        self.current_mean_x2 = self.mean_x2
     
     def initialize(self, context):
         super().initialize(context)
@@ -33,11 +29,11 @@ class SimpleHandler(BaseHandler):
         self.model.eval()
 
         # metrics
-        self.inf_request_count = metrics.add_metric_to_cache(
-            metric_name="inference_request_count",
-            unit="count",
-            dimension_names=["ModelName"],
-            metric_type=MetricTypes.COUNTER,
+        self.invalid_input_count = metrics.add_metric_to_cache(
+            metric_name="invalid_input_count", 
+            unit="count", 
+            dimension_names=["Hostname"], 
+            metric_type=MetricTypes.COUNTER
         )
 
         self.input_mean_x1 = metrics.add_metric_to_cache(
@@ -77,11 +73,12 @@ class SimpleHandler(BaseHandler):
             preprocessed_data = data[0]['body']['data']
 
 
-        if len(preprocessed_data) != 2: #hard code TODO
-            raise ValueError("Invalid Input, please make sure input data length is 2")  
+        if len(preprocessed_data) != self.input_dim:
+            self.invalid_input_count.add_or_update(value=1, dimension_values=[self.context.model_name])
+            raise PredictionException(f"Invalid input dimensions. Expected {self.input_dim} but got {len(preprocessed_data)}.", 513) 
         preprocessed_data = torch.tensor(preprocessed_data).float()
 
-        self._update_incremental_stats(preprocessed_data)
+        self.update_input_metrics(preprocessed_data)
 
         return preprocessed_data
 
@@ -122,7 +119,7 @@ class SimpleHandler(BaseHandler):
         return self.postprocess(model_output)
     
 
-    def _update_incremental_stats(self, preprocessed_data):
+    def update_input_metrics(self, preprocessed_data):
 
         """
         calculate incremental mean and variance
@@ -141,6 +138,6 @@ class SimpleHandler(BaseHandler):
         self.var_x2 += x2_delta * (x2 - self.mean_x2)
 
         self.input_mean_x1.add_or_update(value=self.mean_x1, dimension_values=[self.context.model_name])
-        self.input_var_x1.add_or_update(value=self.var_x1, dimension_values=[self.context.model_name])
+        self.input_var_x1.add_or_update(value=self.var_x1 / (self.count - 1) if self.count > 0 else 0, dimension_values=[self.context.model_name])
         self.input_mean_x2.add_or_update(value=self.mean_x2, dimension_values=[self.context.model_name])
-        self.input_var_x2.add_or_update(value=self.var_x2, dimension_values=[self.context.model_name])
+        self.input_var_x2.add_or_update(value=self.var_x2 / (self.count - 1) if self.count > 0 else 0, dimension_values=[self.context.model_name])

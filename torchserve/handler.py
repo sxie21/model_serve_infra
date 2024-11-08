@@ -24,7 +24,7 @@ class SimpleHandler(BaseHandler):
             print("Model Name:", context.model_name)        
         self.context = context
         metrics = context.metrics
-
+        self.input_dim = 2
         self.model.load_state_dict(torch.load("model.pth", map_location=torch.device('cpu')))
         self.model.eval()
 

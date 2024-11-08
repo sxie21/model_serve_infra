@@ -25,7 +25,7 @@ scrape_configs:
 
   - job_name: 'torchserve_blue'
     static_configs:
-      - targets: ['torchserve_blue:8082']  # TorchServe Green Metrics
+      - targets: ['torchserve_blue:8082']  # TorchServe Blue Metrics
       
   - job_name: 'node_exporter'
     static_configs:

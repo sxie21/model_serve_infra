@@ -33,5 +33,5 @@ scrape_configs:
 
   - job_name: 'train_data_distribution'
     static_configs:
-      - targets: ['kafkaconsumer:6000']  # Node Exporter Metrics
+      - targets: ['kafka_listener:6001']  # Training Data Metrics
 

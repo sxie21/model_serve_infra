@@ -5,8 +5,9 @@ WORKDIR /app
 COPY package.json ./
 RUN npm install
 
-COPY . .
+COPY . . 
 
 EXPOSE 6001
 
-CMD ["node", "consumer.js"]
+
+#CMD ["node", "consumer.js"]

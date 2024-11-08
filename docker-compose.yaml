@@ -113,11 +113,9 @@ services:
     container_name: locust
     ports:
       - "8089:8089"
-    environment:
-      - TARGET_HOST=http://nginx/test/predict
-    command: locust -f /mnt/locust/locustfile.py --host $TARGET_HOST
+    command: locust -f /mnt/locust/locustfile.py --host http://172.31.94.229
     volumes:
-      - ./Locust/locustfile.py:/mnt/locust/locustfile.py
+      - ./emulator/Locust/locustfile.py:/mnt/locust/locustfile.py
     depends_on:
       - nginx
 

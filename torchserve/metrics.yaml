@@ -70,9 +70,9 @@ model_metrics:
   # Dimension "Hostname" is automatically added for model metrics in the backend
   # "HandlerMethodTime" and "ExamplePercentMetric" metrics are not defined here to show auto-detection of backend metrics
   counter:
-    - name: InferenceRequestCount
+    - name: invalid_input_count
       unit: count
-      dimensions: []
+      dimensions: [*hostname]
   gauge:
     - name: input_mean_x1
       unit: value

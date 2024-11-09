@@ -32,7 +32,7 @@ class SimpleHandler(BaseHandler):
         self.invalid_input_count = metrics.add_metric_to_cache(
             metric_name="invalid_input_count", 
             unit="count", 
-            dimension_names=["Hostname"], 
+            dimension_names=[], 
             metric_type=MetricTypes.COUNTER
         )
 

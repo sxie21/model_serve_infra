@@ -9,6 +9,7 @@ class SimpleHandler(BaseHandler):
     def __init__(self):
         super(SimpleHandler, self).__init__()
         self.model = SimpleModel()
+        #custom metrics
         self.count = 0
         self.mean_x1 = 0.0
         self.mean_x2 = 0.0
@@ -17,11 +18,12 @@ class SimpleHandler(BaseHandler):
 
     
     def initialize(self, context):
+        """
+        Invoke by torchserve for loading a model
+        :param context: context contains model server system properties
+        :return:
+        """        
         super().initialize(context)
-        if context is None:
-            print("Context is None!")
-        else:
-            print("Model Name:", context.model_name)        
         self.context = context
         metrics = context.metrics
         self.input_dim = 2
@@ -66,7 +68,12 @@ class SimpleHandler(BaseHandler):
 
 
     def preprocess(self, data):
-
+        """
+        Function to prepare data from the model
+        
+        :param requests:
+        :return: tensor of the processed shape specified by the model
+        """
         #data processing
         preprocessed_data = data[0].get("data",None)
         if preprocessed_data is None:
@@ -77,29 +84,23 @@ class SimpleHandler(BaseHandler):
             self.invalid_input_count.add_or_update(value=1, dimension_values=[])
             raise PredictionException(f"Invalid input dimensions. Expected {self.input_dim} but got {len(preprocessed_data)}.", 513) 
         preprocessed_data = torch.tensor(preprocessed_data).float()
-
+        #metrics processing
         self.update_input_metrics(preprocessed_data)
 
         return preprocessed_data
 
     def inference(self, input_tensor):
-        
+        """
+        Given the data from .preprocess, perform inference using the model.
+        :param requests:
+        :return: tensor of the processed shape specified by the model
+        """               
         with torch.no_grad():
             output = self.model(input_tensor)
         
-        #self.inf_request_count.add_or_update(value=1, dimension_values=[])
-
-        # inference_count_metric = metrics.get_metric(
-        #     metric_name="InferenceRequestCount", metric_type=MetricTypes.COUNTER
-        # )
-        # inference_count_metric.add_or_update(
-        #     value=1, dimension_values=[self.context.model_name]
-        # )        
-
         return output
 
     def postprocess(self, inference_output):
-        
         
         postprocess_output = [{"output": inference_output.item()}]
     
@@ -120,9 +121,8 @@ class SimpleHandler(BaseHandler):
     
 
     def update_input_metrics(self, preprocessed_data):
-
         """
-        calculate incremental mean and variance
+        Update mean and variance incrementally using Welford's method.
         """
         x1, x2 = preprocessed_data
 

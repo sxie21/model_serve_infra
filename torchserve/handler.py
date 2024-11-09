@@ -74,7 +74,7 @@ class SimpleHandler(BaseHandler):
 
 
         if len(preprocessed_data) != self.input_dim:
-            self.invalid_input_count.add_or_update(value=1, dimension_values=[self.context.model_name])
+            self.invalid_input_count.add_or_update(value=1, dimension_values=[])
             raise PredictionException(f"Invalid input dimensions. Expected {self.input_dim} but got {len(preprocessed_data)}.", 513) 
         preprocessed_data = torch.tensor(preprocessed_data).float()
 

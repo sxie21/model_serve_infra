@@ -72,7 +72,7 @@ model_metrics:
   counter:
     - name: invalid_input_count
       unit: count
-      dimensions: [*hostname]
+      dimensions: []
   gauge:
     - name: input_mean_x1
       unit: value

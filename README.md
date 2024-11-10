@@ -1,10 +1,18 @@
 ## Introduction
 
-This project is about build a dockerized infrastructure on a single node HTTP server to serve and monitor a simple machinel learning model.
+This project is about build a dockerized infrastructure on a single node HTTP server to serve and monitor a simple machinel learning model, and provides:
+- model serving in torchserve with blue green deployment, max latency 120ms under 100QPS
+- metrics monitoring with pre-build dashboard in grafana
+    - server load
+    - software performace e.g latency
+    - model drift detection by zscore of input features
+- simulators simulating user calls and generating training data input
+- access log compress by prod and test
+- automated deployment pipeline by Jenkins
+
 
 <img src="./assets/diagram.png" alt="alt text" width="1200" />
 <div style="clear: both;"></div>
-
 
 
 ## Contents
@@ -42,6 +50,12 @@ This project is about build a dockerized infrastructure on a single node HTTP se
     $ ./scripts/install_docker.sh
     ```
     - Make sure model deliverables model.py and model.pth are under model_serve_infra/torchserve/
+
+    - Some files are developped in windows and problems may occur from windows-style files, if encountered any issues caused by \x0d character, do:
+    ```
+    sudo apt-get install dos2unix
+    find model_serve_infra/ -type f -name "*.sh" -exec dos2unix {} \;
+    ```
 
 2. **To get everything all set**:
 

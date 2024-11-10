@@ -1,0 +1,53 @@
+version: "2"
+
+networks:
+  model_serve_infra_monitoring:
+    external: true  #external from main yaml
+
+services:
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.8
+    ports:
+      - "2181:2181"
+#    volumes:
+#      - "zookeeper_data:/bitnami"
+    networks:
+      - model_serve_infra_monitoring
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: docker.io/bitnami/kafka:2.8
+    ports:
+      - "9092:9092"
+#    volumes:
+#      - "kafka_data:/bitnami"
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CLIENT:PLAINTEXT,EXTERNAL:PLAINTEXT
+      - KAFKA_CFG_LISTENERS=CLIENT://:9093,EXTERNAL://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=CLIENT://kafka:9093,EXTERNAL://localhost:9092
+      - KAFKA_CFG_INTER_BROKER_LISTENER_NAME=CLIENT
+      - KAFKA_CREATE_TOPICS=trainingdata:1:1
+#    command: ["kafka-topics.sh", "--create", "--topic", "trainingdata", "--bootstrap-server", "localhost:9092", "--partitions", "1"]
+    healthcheck:
+      test: ["CMD", "kafka-topics.sh", "--list", "--bootstrap-server", "localhost:9092"]
+      interval: 30s
+      retries: 5
+    networks:
+      - model_serve_infra_monitoring
+    depends_on:
+      - zookeeper
+
+  producer:
+    build: .
+    environment:
+      - KAFKA_HOST=kafka
+      - KAFKA_PORT=9093
+      - KAFKA_TOPIC=trainingdata
+    networks:
+      - model_serve_infra_monitoring
+    command: python producer.py
+    depends_on:
+      - kafka
+    restart: always

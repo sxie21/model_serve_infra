@@ -108,9 +108,9 @@ This project is about build a dockerized infrastructure on a single node HTTP se
         
         Create kafka topic by `docker-compose -f ./simulator/kafka_producer/docker-compose.yaml exec -it kafka kafka-topics.sh --bootstrap-server localhost:9092 --create --topic trainingdata`
         
-        To run kakfa consumer and feed metrics into prometheus, run `./simulator/kafka_consumer/install_and_run.sh`
+        To run kakfa consumer and feed metrics into prometheus, run `./simulator/kafka_consumer/install.sh && nohup  node consumer.js &`
 
-        For ubuntu somehow `host.docker.internal` cannot be refered to hostip :(, consumer is not running in docker and training data metrics target address in `./config/prometheus/prometheus.yml` has to be manually set and restart docker if needed by docker-compose restart prometheus
+        For ubuntu somehow `host.docker.internal` cannot be refered to hostip :(, consumer is not running in docker and training data metrics target address in `./config/prometheus/prometheus.yml` has to be manually set.
 
         Z-score of input feature x1 and x2 are calculated on Grafana together with other monitoring metrics
 
@@ -256,7 +256,7 @@ Here's a test with simplemodel on EC2 t2.micro to compare performance difference
 
     Requests per second: 1332.13 (mean)  
     Time per request: 75.068 ms (mean)  
-    Time per request (all requests)**: 0.751 ms (mean across all concurrent requests)
+    Time per request (all requests): 0.751 ms (mean across all concurrent requests)
 
     | Percentile | 50%  | 66%  | 75%  | 80%  | 90%  | 95%  | 98%  | 99%  | 100% (Longest Request) |
     |------------|------|------|------|------|------|------|------|------|------------------------|
@@ -310,8 +310,8 @@ Under light weight traffic, their performance are similiar to each other
 
 - TorchServe
 
-    Requests per second**: 3302.70 (mean)  
-    Time per request**: 60.556 ms (mean)  
+    Requests per second: 3302.70 (mean)  
+    Time per request: 60.556 ms (mean)  
     Time per request (all requests)**: 0.303 ms (mean across all concurrent requests)  
     **Failed requests**: 9087
 

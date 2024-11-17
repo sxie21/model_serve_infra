@@ -14,7 +14,7 @@ sudo systemctl status jenkins
 
 
 #add jenkins to docker group to run docker commands
-sudo usermod -aG ubuntu jenkins
+sudo usermod -aG ubuntu jenkins 
 
 #add jenkins to host user group to manage project files
 sudo usermod -aG docker jenkins #add jenkins to docker group to run docker commands

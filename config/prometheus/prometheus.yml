@@ -21,4 +21,4 @@ scrape_configs:
 
   - job_name: 'train_data_distribution'
     static_configs:
-      - targets: ['172.31.26.180:6001']  # Training Data Metrics
+      - targets: ['172.31.30.239:6001']  # Training Data Metrics

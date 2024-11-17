@@ -1,14 +1,14 @@
 ## Introduction
 
 This project is about build a dockerized infrastructure on a single node HTTP server to serve and monitor a simple machinel learning model, and provides:
-- model serving in torchserve with blue green deployment, max latency 120ms under 100QPS
+- model serving in torchserve with blue green deployment, max latency 120ms under 100QPS on AWS EC2 t2.micro
 - metrics monitoring with pre-build dashboard in grafana
     - server load
     - software performace e.g latency
-    - model drift detection by zscore of input features
+    - model drift detection by calculating z-score of input features
 - simulators simulating user calls and generating training data input
-- access log compress by prod and test
-- automated deployment pipeline by Jenkins
+- prod api access log and test api compressed daily
+- automated pipeline to perform model archive, load test and deploy by Jenkins
 
 
 <img src="./assets/diagram.png" alt="alt text" width="1200" />

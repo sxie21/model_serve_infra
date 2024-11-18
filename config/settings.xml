@@ -1,3 +1,0 @@
-git_repo_url: https://github.com/user/repo.git #repo for CICD
-qps: 100
-latency: 200

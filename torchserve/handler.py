@@ -4,6 +4,8 @@ from ts.utils.util import PredictionException
 import torch
 import json
 from model import SimpleModel
+import logging
+import os
 
 class SimpleHandler(BaseHandler):
     def __init__(self):
@@ -11,11 +13,8 @@ class SimpleHandler(BaseHandler):
         self.model = SimpleModel()
         #custom metrics
         self.count = 0
-        self.mean_x1 = 0.0
-        self.mean_x2 = 0.0
-        self.var_x1 = 0.0
-        self.var_x2 = 0.0
-
+        self.mean = {}
+        self.var = {}
     
     def initialize(self, context):
         """
@@ -26,7 +25,14 @@ class SimpleHandler(BaseHandler):
         super().initialize(context)
         self.context = context
         metrics = context.metrics
-        self.input_dim = 2
+        if os.path.exists('model_config.json'):
+            with open('model_config.json', 'r') as config_file:
+                config = json.load(config_file)
+                self.input_dim = config.get('input_dim', 2)
+        else:
+            logging.warn('model_config.json file not found')
+            self.input_dim = 2
+
         self.model.load_state_dict(torch.load("model.pth", map_location=torch.device('cpu')))
         self.model.eval()
 
@@ -37,34 +43,39 @@ class SimpleHandler(BaseHandler):
             dimension_names=[], 
             metric_type=MetricTypes.COUNTER
         )
+        for i in range(1, self.input_dim + 1):
+            self.mean[f'x{i}'] = 0.0
+            self.var[f'x{i}'] = 0.0
 
-        self.input_mean_x1 = metrics.add_metric_to_cache(
-            metric_name="input_mean_x1", 
-            unit="value", 
-            dimension_names=["ModelName"], 
-            metric_type=MetricTypes.GAUGE 
-        )
-        
-        self.input_var_x1 = metrics.add_metric_to_cache(
-            metric_name="input_var_x1", 
-            unit="value", 
-            dimension_names=["ModelName"], 
-            metric_type=MetricTypes.GAUGE
-        )
+        for i in range(1, self.input_dim + 1):
 
-        self.input_mean_x2 = metrics.add_metric_to_cache(
-            metric_name="input_mean_x2", 
-            unit="value", 
-            dimension_names=["ModelName"], 
-            metric_type=MetricTypes.GAUGE 
-        )
+            metrics.add_metric_to_cache(
+                metric_name=f"input_mean_x{i}", 
+                unit="value", 
+                dimension_names=["ModelName"], 
+                metric_type=MetricTypes.GAUGE 
+            )
+            
+            metrics.add_metric_to_cache(
+                metric_name=f"input_var_x{i}", 
+                unit="value", 
+                dimension_names=["ModelName"], 
+                metric_type=MetricTypes.GAUGE
+            )
+
+        # self.input_mean_x2 = metrics.add_metric_to_cache(
+        #     metric_name="input_mean_x2", 
+        #     unit="value", 
+        #     dimension_names=["ModelName"], 
+        #     metric_type=MetricTypes.GAUGE 
+        # )
         
-        self.input_var_x2 = metrics.add_metric_to_cache(
-            metric_name="input_var_x2", 
-            unit="value", 
-            dimension_names=["ModelName"], 
-            metric_type=MetricTypes.GAUGE
-        )        
+        # self.input_var_x2 = metrics.add_metric_to_cache(
+        #     metric_name="input_var_x2", 
+        #     unit="value", 
+        #     dimension_names=["ModelName"], 
+        #     metric_type=MetricTypes.GAUGE
+        # )        
 
 
     def preprocess(self, data):
@@ -124,20 +135,33 @@ class SimpleHandler(BaseHandler):
         """
         Update mean and variance incrementally using Welford's method.
         """
-        x1, x2 = preprocessed_data
-
         self.count += 1
+        for i, value in enumerate(preprocessed_data):
+            i += 1 #index offset by 1
+            delta = value - self.mean[f'x{i}']
+            self.mean[f'x{i}'] += delta / self.count
+            self.var[f'x{i}'] += delta * (value - self.mean[f'x{i}'])
+            
+            self.context.metrics.get_metric(metric_name=f'input_mean_x{i}', metric_type=MetricTypes.GAUGE).\
+                add_or_update(value=self.mean[f'x{i}'], dimension_values=[self.context.model_name])
+            self.context.metrics.get_metric(metric_name=f'input_var_x{i}', metric_type=MetricTypes.GAUGE).\
+                add_or_update(value=self.var[f'x{i}'] / (self.count - 1) if self.count > 0 else 0, dimension_values=[self.context.model_name])
 
-        x1_delta = x1 - self.mean_x1
-        x2_delta = x2 - self.mean_x2
 
-        self.mean_x1 += x1_delta / (self.count)
-        self.mean_x2 += x2_delta / (self.count)
+        # x1, x2 = preprocessed_data
+
+        # self.count += 1
+
+        # x1_delta = x1 - self.mean_x1
+        # x2_delta = x2 - self.mean_x2
+
+        # self.mean_x1 += x1_delta / (self.count)
+        # self.mean_x2 += x2_delta / (self.count)
         
-        self.var_x1 += x1_delta * (x1 - self.mean_x1)
-        self.var_x2 += x2_delta * (x2 - self.mean_x2)
+        # self.var_x1 += x1_delta * (x1 - self.mean_x1)
+        # self.var_x2 += x2_delta * (x2 - self.mean_x2)
 
-        self.input_mean_x1.add_or_update(value=self.mean_x1, dimension_values=[self.context.model_name])
-        self.input_var_x1.add_or_update(value=self.var_x1 / (self.count - 1) if self.count > 0 else 0, dimension_values=[self.context.model_name])
-        self.input_mean_x2.add_or_update(value=self.mean_x2, dimension_values=[self.context.model_name])
-        self.input_var_x2.add_or_update(value=self.var_x2 / (self.count - 1) if self.count > 0 else 0, dimension_values=[self.context.model_name])
+        # self.input_mean_x1.add_or_update(value=self.mean_x1, dimension_values=[self.context.model_name])
+        # self.input_var_x1.add_or_update(value=self.var_x1 / (self.count - 1) if self.count > 0 else 0, dimension_values=[self.context.model_name])
+        # self.input_mean_x2.add_or_update(value=self.mean_x2, dimension_values=[self.context.model_name])
+        # self.input_var_x2.add_or_update(value=self.var_x2 / (self.count - 1) if self.count > 0 else 0, dimension_values=[self.context.model_name])

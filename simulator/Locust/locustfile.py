@@ -15,4 +15,4 @@ class APIUser(HttpUser):
         response = self.client.post('/test/predict', json={"data": data})
 
         if response.status_code != 200:
-            logging.info(f"Request failed with status code {response.status_code}. Response message: "{response.json()['message']}" Data sent: {data}")
+            logging.info(f'''Request failed with status code {response.status_code}. Response message: "{response.json()['message']}" Data sent: {data}''')

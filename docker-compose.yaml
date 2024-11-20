@@ -8,14 +8,14 @@ services:
   torchserve_green:
     image: pytorch/torchserve:0.12.0-cpu
     volumes:
-      - ./torchserve/model_store:/home/model-server/model-store
-      - ./torchserve/model_store/green:/home/model-server/model-store/green
+      - ./torchserve/models:/home/model-server/models
+      #- ./torchserve/model_store/green:/home/model-server/model-store/green
       - ./torchserve/config.properties:/home/model-server/config.properties
       - ./torchserve/metrics.yaml:/home/model-server/metrics.yaml
-      - ./torchserve/model.py:/home/model-server/model.py
-      - ./torchserve/model.pth:/home/model-server/model.pth
-      - ./torchserve/handler.py:/home/model-server/handler.py
-      - ./torchserve/start_green.sh:/home/model-server/start_green.sh
+      #- ./torchserve/model.py:/home/model-server/model.py
+      #- ./torchserve/model.pth:/home/model-server/model.pth
+      #- ./torchserve/handler.py:/home/model-server/handler.py
+      - ./torchserve/torchserve_start.sh:/home/model-server/torchserve_start.sh
 
     ports:
       - "8000:8080"  # inference API
@@ -24,20 +24,20 @@ services:
     networks:
       - monitoring 
     restart: always
-    command: ["/bin/bash", "/home/model-server/start_green.sh"]
+    command: ["/bin/bash", "/home/model-server/torchserve_start.sh"]
     #command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
 
   torchserve_blue:
     image: pytorch/torchserve:0.12.0-cpu
     volumes:
-      - ./torchserve/model_store:/home/model-server/model-store
-      - ./torchserve/model_store/blue:/home/model-server/model-store/blue
+      - ./torchserve/models:/home/model-server/models
+      #- ./torchserve/model_store/blue:/home/model-server/model-store/blue
       - ./torchserve/config.properties:/home/model-server/config.properties
       - ./torchserve/metrics.yaml:/home/model-server/metrics.yaml
-      - ./torchserve/model.py:/home/model-server/model.py
-      - ./torchserve/model.pth:/home/model-server/model.pth
-      - ./torchserve/handler.py:/home/model-server/handler.py
-      - ./torchserve/start_blue.sh:/home/model-server/start_blue.sh
+      #- ./torchserve/model.py:/home/model-server/model.py
+      #- ./torchserve/model.pth:/home/model-server/model.pth
+      #- ./torchserve/handler.py:/home/model-server/handler.py
+      - ./torchserve/torchserve_start.sh:/home/model-server/torchserve_start.sh
     ports:
       - "9000:8080"  # inference API
       - "9001:8081"  # management API
@@ -45,7 +45,7 @@ services:
     networks:
       - monitoring
     restart: always
-    command: ["/bin/bash", "/home/model-server/start_blue.sh"]
+    command: ["/bin/bash", "/home/model-server/torchserve_start.sh"]
     #command: ["torchserve", "--start", "--model-store", "/home/model-server/model-store", "--enable-model-api", "--ts-config", "config.properties", "--disable-token-auth"]
 
   nginx:
@@ -105,7 +105,7 @@ services:
     image: locustio/locust
     volumes:
       - ./simulator/Locust/locustfile.py:/locust-tasks/locustfile.py
-    command: -f /locust-tasks/locustfile.py --host=http://172.31.29.243
+    command: -f /locust-tasks/locustfile.py --host=http://nginx
     networks:
       - monitoring    
     ports:

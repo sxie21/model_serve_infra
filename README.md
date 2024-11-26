@@ -1,6 +1,6 @@
 ## Introduction
 
-This project is about build a dockerized infrastructure on a single node HTTP server to serve and monitor a simple machinel learning model, and provides:
+This project is about building a dockerized infrastructure on a single node HTTP server to serve and monitor a simple machinel learning model, and provides:
 - model serving in torchserve with blue green deployment, max latency 120ms under 100QPS on AWS EC2 t2.micro
 - metrics monitoring with pre-build dashboard in grafana
     - server load
